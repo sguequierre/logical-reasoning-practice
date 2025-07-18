@@ -203,19 +203,22 @@ public async checkAuthStatus(): Promise<boolean> {
     });
   }
 
-  // Question methods (now require authentication)
+  // Question method
   async generateQuestion(request: GenerateQuestionRequest): Promise<Question> {
     try {
       return await this.request<Question>('/questions/generate', {
         method: 'POST',
         body: JSON.stringify(request),
       });
-    } catch (error) {
-      if (!this.isAuthenticated()) {
-        // Fallback to sample question if not authenticated
-        return this.getSampleQuestion(request.type);
+    } catch (error: any) {
+      if (error.message.includes('429')) {
+        // Rate limited - show upgrade prompt
+        throw new Error('Daily question limit reached. Upgrade to premium for more questions!');
       }
-      throw error;
+      
+      // Fallback to sample question for other errors
+      console.warn('API failed, using sample question:', error);
+      return this.getSampleQuestion(request.type);
     }
   }
 
